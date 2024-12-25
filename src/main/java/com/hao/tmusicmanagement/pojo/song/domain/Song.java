@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @TableName("song")
 public class Song {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     private Long id;
     @TableField("name")
     private String title;
@@ -19,6 +19,7 @@ public class Song {
     private Long artist;
     @TableField("song_url")
     private String url;
+    @TableField("tag_id")
     private String tagId;
     private Long lyrics;
     private Integer duration;

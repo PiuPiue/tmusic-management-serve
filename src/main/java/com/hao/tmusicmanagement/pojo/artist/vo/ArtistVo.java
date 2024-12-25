@@ -1,6 +1,7 @@
 package com.hao.tmusicmanagement.pojo.artist.vo;
 
-import com.music.common.pojo.song.vo.SongVo;
+
+import com.hao.tmusicmanagement.pojo.song.vo.SongVo;
 import lombok.Data;
 
 import java.util.List;
