@@ -3,6 +3,7 @@ package com.hao.tmusicmanagement.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hao.tmusicmanagement.core.AjaxResult;
 import com.hao.tmusicmanagement.pojo.song.domain.Song;
+import com.hao.tmusicmanagement.pojo.song.dto.SongDto;
 import com.hao.tmusicmanagement.pojo.song.vo.SongVo;
 import com.hao.tmusicmanagement.service.SongService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ public class SongController {
     private SongService songService;
 
     @PostMapping("/addSong")
-    public AjaxResult addSong(@RequestBody Song song) {
+    public AjaxResult addSong(@RequestBody SongDto song) {
         songService.addSong(song);
         return new AjaxResult("添加成功", "200");
     }
@@ -42,8 +43,10 @@ public class SongController {
         return new AjaxResult(song, "200", "查询成功");
     }
 
-
-
-
+    @PostMapping("/deleteSongs")
+    public AjaxResult deleteSongs(@RequestBody Long[] ids) {
+        songService.deleteSongs(ids);
+        return new AjaxResult("删除成功", "200");
+    }
 
 }

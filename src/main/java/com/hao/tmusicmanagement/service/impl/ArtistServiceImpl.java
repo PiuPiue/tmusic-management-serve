@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -34,12 +35,13 @@ public class ArtistServiceImpl extends ServiceImpl<SingerDao, Artist> implements
     @Override
     public void addArtist(Artist artist) {
         artist.setIsDelete(0);
+        artist.setCreateTime(LocalDateTime.now());
         singerDao.insert(artist);
     }
 
     @Override
     public void updateArtist(Artist artist) {
-        //首先查看是否存在该歌手
+        //首先查看是否存在该歌手,删除歌手不需要删除歌曲，改成未知歌手即可
         Artist artist1 = singerDao.selectById(artist.getId());
         if(artist1==null){
             throw new TMusicException("歌手不存在",410);
@@ -48,15 +50,14 @@ public class ArtistServiceImpl extends ServiceImpl<SingerDao, Artist> implements
     }
 
     @Override
-    public void deleteArtist(List<Long> ids) {
-        for(Long id:ids){
-            deleteById(id);
-        }
+    public void deleteArtist(Long id) {
+        //删除该歌手的歌曲
+        deleteById(id);
     }
 
     /**
      * 分页查询歌手
-     * 根据名称查询，根据性别获取等方式
+     * 根据名称查询，根据性别获取等方式,除此之外
      * @param pageNum
      * @param pageSize
      * @param name
@@ -66,13 +67,44 @@ public class ArtistServiceImpl extends ServiceImpl<SingerDao, Artist> implements
     public Page<Artist> getArtist(Integer pageNum, Integer pageSize,String name) {
         Page<Artist> page = new Page<>(pageNum, pageSize);
         Page<Artist> artistPage = null;
-        if(StringUtils.hasText(name)){
-            LambdaQueryWrapper<Artist> queryWrapper = new LambdaQueryWrapper<Artist>().like(Artist::getName,name);
-            artistPage = singerDao.selectPage(page, queryWrapper);
-        }else{
-            artistPage = singerDao.selectPage(page, null);
+        LambdaQueryWrapper<Artist> queryWrapper = new LambdaQueryWrapper<Artist>().like(StringUtils.hasText(name),Artist::getName,name);
+        artistPage = singerDao.selectPage(page, queryWrapper);
+        if(artistPage.getRecords().size()!=0){
+            return artistPage;
+        }else {
+            return new Page<>();
         }
-        return artistPage;
+    }
+
+    @Override
+    public List<Song> getAllSong(Long id) {
+        //首先查看歌手是否存在
+        Artist artist = singerDao.selectById(id);
+        if(artist==null){
+            throw new TMusicException("歌手不存在",410);
+        }
+        List<Song> songs = songDao.selectList(new LambdaQueryWrapper<Song>().eq(Song::getArtist, id));
+        return songs;
+    }
+
+
+    @Override
+    public void deleteSong(Long id, Long songId) {
+        //查看歌手是否存在，查看歌曲是否存在
+        Artist artist = singerDao.selectById(id);
+        Song song = songDao.selectById(songId);
+        if(artist==null||song==null){
+            throw new TMusicException("歌手或歌曲不存在",410);
+        }
+        //不需要删除歌曲，只需要修改歌曲为0号歌手（未知歌手即可）
+        songDao.update(null,new LambdaUpdateWrapper<Song>().eq(Song::getId,songId).set(Song::getArtist,0));
+    }
+
+    @Override
+    public void deleteBatch(Long[] ids) {
+        for (Long id : ids){
+            deleteById(id);
+        }
     }
 
     private void deleteById(Long id){

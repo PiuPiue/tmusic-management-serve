@@ -36,22 +36,39 @@ public class SingerController {
     }
 
     @PostMapping("/addSinger")
-    public AjaxResult addSinger(Artist artist) {
+    public AjaxResult addSinger(@RequestBody Artist artist) {
         artistService.addArtist(artist);
         return new AjaxResult("添加成功", "200");
     }
 
-    @PostMapping ("/deleteById")
-    public AjaxResult deleteById(@RequestBody List<Long> ids) {
-        artistService.deleteArtist(ids);
+    @GetMapping ("/deleteById")
+    public AjaxResult deleteById(Long id) {
+        artistService.deleteArtist(id);
         return new AjaxResult("删除成功", "200");
     }
 
 
     @PostMapping("/updateSinger")
-    public AjaxResult updateSinger(Artist artist) {
+    public AjaxResult updateSinger(@RequestBody Artist artist) {
         artistService.updateArtist(artist);
         return new AjaxResult("修改成功", "200");
+    }
+
+    @GetMapping("/getAllSong")
+    public AjaxResult getAllSong(Long id) {
+        return new AjaxResult(artistService.getAllSong(id), "获取成功", "200");
+    }
+
+    @GetMapping("/deleteSong")
+    public AjaxResult deleteSong(Long id,Long songId){
+        artistService.deleteSong(id,songId);
+        return new AjaxResult("删除成功", "200");
+    }
+
+    @PostMapping("/deleteBatch")
+    public AjaxResult deleteBatch(@RequestBody Long[] ids) {
+        artistService.deleteBatch(ids);
+        return new AjaxResult("删除成功", "200");
     }
 
 

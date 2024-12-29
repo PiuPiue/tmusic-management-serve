@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @TableName("song")
 public class Song {
 
-    @TableId(type = IdType.INPUT)
+    @TableId
     private Long id;
     @TableField("name")
     private String title;

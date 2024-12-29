@@ -2,7 +2,6 @@ package com.hao.tmusicmanagement.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hao.tmusicmanagement.Exception.TMusicException;
@@ -11,6 +10,7 @@ import com.hao.tmusicmanagement.dao.*;
 import com.hao.tmusicmanagement.pojo.artist.pojo.Artist;
 import com.hao.tmusicmanagement.pojo.playlist.domain.UserPlaylist;
 import com.hao.tmusicmanagement.pojo.playlist.domain.playlist;
+import com.hao.tmusicmanagement.pojo.playlist.vo.PlayListVo;
 import com.hao.tmusicmanagement.pojo.song.domain.PlayListSong;
 import com.hao.tmusicmanagement.pojo.song.domain.Song;
 import com.hao.tmusicmanagement.pojo.song.vo.SongVo;
@@ -20,7 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SongListImpl extends ServiceImpl<SongListDao, playlist> implements SongListService {
@@ -36,16 +40,20 @@ public class SongListImpl extends ServiceImpl<SongListDao, playlist> implements 
     @Autowired
     private UserPlaylistDao userPlaylistDao;
 
+    @Autowired
+    private UserDao userDao;
+
 
     /**
      * 歌单的分页查询
      * 1.根据名称模糊搜索
+     *
      * @param page
      * @param pageSize
      * @return
      */
     @Override
-    public List<playlist> getSongListByPage(Integer page, Integer pageSize,String name) {
+    public Page<PlayListVo> getSongListByPage(Integer page, Integer pageSize, String name) {
         Page<playlist> playlistPage = new Page<>(page, pageSize);
         if(StringUtils.hasText(name)){
             LambdaQueryWrapper<playlist> eq = new LambdaQueryWrapper<playlist>().eq(playlist::getTitle, name);
@@ -53,19 +61,34 @@ public class SongListImpl extends ServiceImpl<SongListDao, playlist> implements 
         }else{
             playlistPage = this.baseMapper.selectPage(playlistPage, null);
         }
-        return playlistPage.getRecords();
+        List<playlist> records = playlistPage.getRecords();
+        List<PlayListVo> collect = records.stream().map(playlist -> {
+            PlayListVo playListVo = BeanUtils.copyBean(playlist, PlayListVo.class);
+            playListVo.setArtist(userDao.selectById(playlist.getArtistId()).getNickname());
+            return playListVo;
+        }).collect(Collectors.toList());
+        Page<PlayListVo> playListVoPage = new Page<PlayListVo>().setRecords(collect);
+        playListVoPage.setCurrent(playlistPage.getCurrent());
+        playListVoPage.setSize(playlistPage.getSize());
+        playListVoPage.setTotal(playlistPage.getTotal());
+        return playListVoPage;
     }
+
+
 
     @Override
     public void addSongList(playlist playlist) {
         //首先查询当前登录人是否具有权限,如果没有相关权限则抛出异常
-
+        playlist.setArtistId(1L);
+        playlist.setIsDelete(0);
+        playlist.setTagId("1");
+        playlist.setCreateTime(Timestamp.valueOf(LocalDateTime.now()));
         //随后进行新增
         this.baseMapper.insert(playlist);
     }
 
     @Override
-    public AjaxResult deleteSongList(Integer id) {
+    public AjaxResult deleteSongList(Long id) {
         //首先查询是否有
         playlist playlist = this.baseMapper.selectById(id);
         if(playlist==null){
@@ -87,7 +110,7 @@ public class SongListImpl extends ServiceImpl<SongListDao, playlist> implements 
         UpdateWrapper<playlist> updateWrapper = new UpdateWrapper<>();
         // 只更新不为空的字段
         if (playlist.getTitle() != null&&!"".equals(playlist.getTitle())) {
-            updateWrapper.set("name", playlist.getTitle());
+            updateWrapper.set("title", playlist.getTitle());
         }
         if (playlist.getDescription() != null&&!"".equals(playlist.getDescription())) {
             updateWrapper.set("description", playlist.getDescription());
@@ -103,23 +126,20 @@ public class SongListImpl extends ServiceImpl<SongListDao, playlist> implements 
     }
 
     @Override
-    public AjaxResult deleteSong(List<Integer> songId, Integer songListId) {
-        //首先查询songId是否为空
-        if(songId==null||songId.size()==0){
-            throw new TMusicException("歌曲id为空",410);
-        }
-        //随后查询歌曲是否存在于歌单之中
-        if(playListSongDao.selectList(new LambdaQueryWrapper<PlayListSong>().eq(PlayListSong::getPlaylistId, songListId).in(PlayListSong::getSongId, songId))==null){
+    public AjaxResult deleteSong(Long songId, Long songListId) {
+
+        LambdaQueryWrapper<PlayListSong> playListSongLambdaQueryWrapper = new LambdaQueryWrapper<PlayListSong>().eq(PlayListSong::getPlaylistId, songListId).eq(PlayListSong::getSongId, songId);
+        //先查询歌曲是否存在于歌单之中
+        if(playListSongDao.selectOne(playListSongLambdaQueryWrapper)==null){
             throw new TMusicException("歌曲不存在于歌单之中",410);
         }
-
         //随后可以进行歌曲删除
         playListSongDao.delete(new LambdaQueryWrapper<PlayListSong>().eq(PlayListSong::getPlaylistId, songListId).in(PlayListSong::getSongId, songId));
         return new AjaxResult("删除成功", "200");
     }
 
     @Override
-    public AjaxResult addSong(Integer songId, Integer songListId) {
+    public AjaxResult addSong(Long songId, Long songListId) {
         //查询歌曲是否已经存在
         if(playListSongDao.selectOne(new LambdaQueryWrapper<PlayListSong>().eq(PlayListSong::getPlaylistId, songListId).eq(PlayListSong::getSongId, songId))!=null){
             throw new TMusicException("歌曲已经存在于歌单之中",410);
@@ -128,24 +148,43 @@ public class SongListImpl extends ServiceImpl<SongListDao, playlist> implements 
         PlayListSong playListSong = new PlayListSong();
         playListSong.setPlaylistId(Long.valueOf(songListId));
         playListSong.setSongId(Long.valueOf(songId));
+        playListSong.setIsDelete(0);
         playListSongDao.insert(playListSong);
         return new AjaxResult("添加成功", "200");
     }
 
     @Override
-    public List<SongVo> getSongByPlayList(Integer id) {
+    public List<SongVo> getSongByPlayList(Long id) {
         //首先根据id查询出所有歌曲，随后查询歌曲详细信息
         LambdaQueryWrapper<PlayListSong> playListSongLambdaQueryWrapper = new LambdaQueryWrapper<PlayListSong>().eq(PlayListSong::getPlaylistId, id);
         List<PlayListSong> playListSongs = playListSongDao.selectList(playListSongLambdaQueryWrapper);
+        if(playListSongs.size()==0){
+            return new ArrayList<>();
+        }
         //随后根据获取到的歌曲id获取相关的全部歌曲,需要实现相关信息的转换，如歌曲的作者信息
         List<Song> songs = songDao.selectBatchIds(playListSongs.stream().map(PlayListSong::getSongId).toList());
-        List<SongVo> songVos = BeanUtils.copyToList(songs, SongVo.class);
-        for(Song song: songs){
-            String name = singerDao.selectOne(new LambdaQueryWrapper<Artist>().eq(Artist::getId, song.getArtist())).getName();
+
+        List<Artist> artists = singerDao.selectList(new LambdaQueryWrapper<Artist>().in(Artist::getId, songs.stream().map(Song::getArtist).toList()));
+        List<SongVo> songVos = new ArrayList<>();
+        for(int i=0;i<songs.size();i++){
+            Song song = songs.get(i);
+            String name = artists.stream().filter(artist -> artist.getId().equals(song.getArtist())).collect(Collectors.toList()).get(0).getName();
             SongVo songVo = BeanUtils.copyBean(song, SongVo.class);
             songVo.setArtist(name);
             songVos.add(songVo);
         }
         return songVos;
+    }
+
+    @Override
+    public void deleteBatch(List<Long> ids) {
+        LambdaQueryWrapper<playlist> in = new LambdaQueryWrapper<playlist>().in(playlist::getId, ids);
+        List<playlist> playlists = this.baseMapper.selectList(in);
+        if(playlists.size()!=ids.size()){
+            throw new TMusicException("删除失败",410);
+        }
+        for (playlist playlist : playlists){
+            this.deleteSongList(playlist.getId());
+        }
     }
 }

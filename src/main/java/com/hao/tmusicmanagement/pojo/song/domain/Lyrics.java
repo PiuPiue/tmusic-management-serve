@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * 歌词类
  */
 @Data
-@Document(collection = "lyrics")
+@Document(collection = "lytest")
 public class Lyrics {
     @Id
     private String id;

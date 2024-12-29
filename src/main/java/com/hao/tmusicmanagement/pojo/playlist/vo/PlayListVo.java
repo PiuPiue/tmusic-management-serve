@@ -1,6 +1,9 @@
 package com.hao.tmusicmanagement.pojo.playlist.vo;
 
 
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.hao.tmusicmanagement.pojo.song.vo.SongVo;
 import lombok.Data;
 
@@ -12,6 +15,8 @@ import java.util.List;
  */
 @Data
 public class PlayListVo {
+
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     private String title;
     private String coverUrl;
