@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.hao.tmusicmanagement.Exception.TMusicException;
+import com.hao.tmusicmanagement.Exception.UnauthorizedException;
 import com.hao.tmusicmanagement.dao.AdminDao;
 import com.hao.tmusicmanagement.pojo.Admin;
 import com.hao.tmusicmanagement.service.AdminService;
@@ -23,7 +24,7 @@ public class AdminServiceImpl implements AdminService {
         LambdaQueryWrapper<Admin> eq = new LambdaQueryWrapper<Admin>().eq(Admin::getAccount, username);
         Admin admin = adminDao.selectOne(eq);
         if(admin==null){
-            throw new TMusicException("用户名或密码错误", 400);
+            throw new UnauthorizedException("用户名或密码错误");
         }
         String s = SaSecureUtil.md5(password);
         if(s.equals(admin.getPassword().toLowerCase())){
@@ -31,7 +32,7 @@ public class AdminServiceImpl implements AdminService {
             SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
             return StpUtil.getTokenValue();
         }else{
-            throw new TMusicException("用户名或密码错误", 400);
+            throw new UnauthorizedException("用户名或密码错误");
         }
     }
 

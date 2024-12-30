@@ -21,7 +21,7 @@ public class HomeController {
     @GetMapping("/data")
     public AjaxResult<HomeBean> getData() {
         HomeBean homeData = homeService.getHomeData();
-        return new AjaxResult<>(homeData, "200", "获取成功");
+        return new AjaxResult<>(homeData,  "获取成功","200");
     }
 
 }

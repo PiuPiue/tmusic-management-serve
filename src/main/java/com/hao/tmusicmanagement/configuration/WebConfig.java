@@ -57,7 +57,8 @@ public class WebConfig implements WebMvcConfigurer {
         //添加不拦截路径
         registration.excludePathPatterns(
                 "/admin/login",
-                "/admin/logout"
+                "/admin/logout",
+                "/minio/upload"
         );
     }
 

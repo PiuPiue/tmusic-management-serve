@@ -1,6 +1,7 @@
 package com.hao.tmusicmanagement.Interceptor;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.hao.tmusicmanagement.Exception.UnauthorizedException;
 import com.hao.tmusicmanagement.dao.LogDao;
 import com.hao.tmusicmanagement.pojo.LogInfo;
 import com.hao.tmusicmanagement.util.IpUtil;
@@ -41,7 +42,7 @@ public class MusicInterceptor extends HandlerInterceptorAdapter {
             logDao.insert(logInfo);
             return true;
         }
-        return false;
+        throw new UnauthorizedException("请先登录");
     }
 
 

@@ -40,7 +40,7 @@ public class SongController {
     @GetMapping("/selectByPage")
     public AjaxResult selectByPage(Integer pageNum, Integer pageSize, String name) {
         Page<SongVo> song = songService.getSong(pageNum, pageSize, name);
-        return new AjaxResult(song, "200", "查询成功");
+        return new AjaxResult(song,  "查询成功","200");
     }
 
     @PostMapping("/deleteSongs")

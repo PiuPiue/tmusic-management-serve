@@ -33,7 +33,7 @@ public class LogServiceImpl implements LogService {
             Page<LogInfo> logInfoPage = new Page<>(i, pageSize);
             LambdaQueryWrapper<LogInfo> logInfoLambdaQueryWrapper = new LambdaQueryWrapper<LogInfo>().orderByDesc(LogInfo::getTime);
             if (time != null) {
-                logInfoLambdaQueryWrapper.ge(LogInfo::getTime, time);
+                logInfoLambdaQueryWrapper.le(LogInfo::getTime, time);
             }
             logInfoLambdaQueryWrapper.eq(type!=null,LogInfo::getType,type);
             IPage<LogInfo> logInfoIPage = logDao.selectPage(logInfoPage, logInfoLambdaQueryWrapper);
